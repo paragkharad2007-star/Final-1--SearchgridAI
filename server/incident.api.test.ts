@@ -40,6 +40,15 @@ describe("incident coordination API", () => {
     })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
+  it("returns a conflict instead of a raw database error for duplicate codes", async () => {
+    await expect(appRouter.createCaller(contextFor("admin")).incident.create({
+      code: "CX1008",
+      title: "Duplicate test incident",
+      venue: "Test venue",
+      lastSeenZone: "North entrance",
+    })).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
   it("allows an authenticated volunteer to mark a zone searched and emits an update", async () => {
     const received: unknown[] = [];
     const listener = (event: unknown) => received.push(event);
