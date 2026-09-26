@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { double, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -48,6 +48,11 @@ export const sightings = mysqlTable("sightings", {
   source: varchar("source", { length: 120 }).notNull(),
   confidence: int("confidence").notNull(),
   reportedBy: varchar("reportedBy", { length: 80 }),
+  status: mysqlEnum("status", ["new", "under_review", "verified", "rejected"]).default("new").notNull(),
+  latitude: double("latitude"),
+  longitude: double("longitude"),
+  reviewedBy: int("reviewedBy"),
+  reviewedAt: timestamp("reviewedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

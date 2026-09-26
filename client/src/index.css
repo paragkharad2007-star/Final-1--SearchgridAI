@@ -254,3 +254,25 @@ h2 { color: #eff8f4; font-size: 16px; letter-spacing: -.025em; }
 .incident-selector span { color: var(--muted); font: 10px 'DM Mono', monospace; letter-spacing: .12em; }
 .incident-selector select { min-height: 38px; max-width: 300px; padding: 0 28px 0 12px; border: 1px solid rgba(159,247,210,.24); border-radius: 8px; color: var(--mint); background: var(--panel-2); font-size: 11px; }
 @media (max-width: 900px) { .incident-selector { width: 100%; } .incident-selector select { max-width: none; } }
+
+.leaflet-sighting-icon { display: grid; place-items: center; border: 2px solid #321b1a; border-radius: 50%; background: var(--red); box-shadow: 0 0 14px rgba(255,128,106,.75); }
+.leaflet-sighting-icon span { color: #fff7f3; font: 800 13px 'DM Mono', monospace; }
+.sighting-status { display: inline-flex; width: fit-content; margin-top: 5px; padding: 3px 6px; border-radius: 4px; color: var(--soft); background: rgba(160,202,190,.12); font: 500 8px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .04em; }
+.sighting-status-new { color: var(--amber); background: rgba(255,209,102,.12); }
+.sighting-status-under_review { color: var(--blue); background: rgba(122,203,255,.12); }
+.sighting-status-verified { color: var(--mint); background: rgba(159,247,210,.12); }
+.sighting-status-rejected { color: var(--red); background: rgba(255,128,106,.12); }
+.sighting-review-actions { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+.sighting-review-actions button { padding: 4px 6px; border: 1px solid rgba(159,247,210,.2); border-radius: 4px; color: var(--soft); background: rgba(159,247,210,.06); font: 500 8px 'DM Mono', monospace; cursor: pointer; text-transform: uppercase; }
+.sighting-review-actions button:hover:not(:disabled) { color: var(--mint); border-color: rgba(159,247,210,.5); }
+.sighting-review-actions button:disabled { cursor: default; opacity: .45; }
+.volunteer-sighting-status { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding: 12px 14px; border: 1px solid rgba(159,247,210,.17); border-radius: 11px; background: rgba(18,35,38,.76); }
+.volunteer-sighting-status > div { min-width: 0; }
+.volunteer-sighting-status strong, .volunteer-sighting-status small { display: block; }
+.volunteer-sighting-status strong { margin-top: 4px; overflow: hidden; color: #d8ece5; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.volunteer-sighting-status small { margin-top: 4px; color: #78958c; font: 500 8px 'DM Mono', monospace; }
+@media (max-width: 760px) { .activity-row { align-items: flex-start; padding: 10px 0; } .sighting-review-actions { margin-left: auto; } }
+.report-confidence { display: grid; gap: 8px; margin: 14px 0 4px; color: var(--muted); font: 500 9px 'DM Mono', monospace; }
+.report-confidence span { display: flex; justify-content: space-between; }
+.report-confidence strong { color: var(--amber); }
+.report-confidence input { width: 100%; accent-color: var(--mint); }

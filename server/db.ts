@@ -95,6 +95,13 @@ export async function getIncidentByCode(code: string) {
   return result[0];
 }
 
+export async function getIncidentById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(incidents).where(eq(incidents.id, id)).limit(1);
+  return result[0];
+}
+
 export async function ensureIncident(input: { code: string; title: string; venue: string; lastSeenZone: string; lastSeenAt: Date }) {
   const existing = await getIncidentByCode(input.code);
   if (existing) return existing;
@@ -110,11 +117,32 @@ export async function listSightings(incidentId: number) {
   return db.select().from(sightings).where(eq(sightings.incidentId, incidentId)).orderBy(desc(sightings.createdAt)).limit(20);
 }
 
-export async function insertSighting(input: { incidentId: number; zone: string; label: string; source: string; confidence: number; reportedBy?: string }) {
+export async function listSightingsByReporter(reportedBy: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(sightings).where(eq(sightings.reportedBy, reportedBy)).orderBy(desc(sightings.createdAt)).limit(20);
+}
+
+export async function getSightingById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(sightings).where(eq(sightings.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function insertSighting(input: { incidentId: number; zone: string; label: string; source: string; confidence: number; reportedBy?: string; latitude?: number; longitude?: number }) {
   const db = await getDb();
   if (!db) return undefined;
   await db.insert(sightings).values(input);
   const rows = await db.select().from(sightings).where(eq(sightings.incidentId, input.incidentId)).orderBy(desc(sightings.createdAt)).limit(1);
+  return rows[0];
+}
+
+export async function reviewSighting(id: number, reviewedBy: number, status: "under_review" | "verified" | "rejected") {
+  const db = await getDb();
+  if (!db) return undefined;
+  await db.update(sightings).set({ status, reviewedBy, reviewedAt: new Date() }).where(eq(sightings.id, id));
+  const rows = await db.select().from(sightings).where(eq(sightings.id, id)).limit(1);
   return rows[0];
 }
 
