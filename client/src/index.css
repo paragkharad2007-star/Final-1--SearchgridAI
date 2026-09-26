@@ -276,3 +276,31 @@ h2 { color: #eff8f4; font-size: 16px; letter-spacing: -.025em; }
 .report-confidence span { display: flex; justify-content: space-between; }
 .report-confidence strong { color: var(--amber); }
 .report-confidence input { width: 100%; accent-color: var(--mint); }
+
+.timeline-tools { display: flex; align-items: center; gap: 8px; }
+.sighting-filter { min-height: 28px; padding: 0 8px; border: 1px solid rgba(159,247,210,.22); border-radius: 6px; color: var(--mint); background: var(--panel-2); font: 500 9px 'DM Mono', monospace; }
+.activity-row[role="button"] { cursor: pointer; }
+.activity-row[role="button"]:hover { background: rgba(159,247,210,.035); }
+.sighting-detail { margin-top: 14px; padding: 17px; }
+.detail-meta { display: block; margin-top: 5px; color: var(--muted); font: 500 9px 'DM Mono', monospace; }
+.sighting-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.detail-section-title { display: flex; align-items: center; gap: 6px; margin: 8px 0 10px; color: var(--mint); font: 500 9px 'DM Mono', monospace; letter-spacing: .08em; text-transform: uppercase; }
+.evidence-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; min-height: 48px; }
+.evidence-card { display: block; overflow: hidden; border: 1px solid rgba(159,247,210,.16); border-radius: 8px; color: var(--soft); background: rgba(159,247,210,.04); text-decoration: none; }
+.evidence-card img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
+.evidence-card span { display: block; overflow: hidden; padding: 6px; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.evidence-upload-button { margin-top: 10px; min-height: 34px; font-size: 9px; }
+.comment-thread { display: grid; gap: 8px; max-height: 230px; overflow-y: auto; padding: 2px; }
+.comment-bubble { padding: 9px 10px; border-left: 2px solid var(--blue); border-radius: 7px; background: rgba(122,203,255,.06); }
+.comment-bubble.coordinator-comment { border-left-color: var(--mint); background: rgba(159,247,210,.06); }
+.comment-bubble strong, .comment-bubble p, .comment-bubble small { display: block; }
+.comment-bubble strong { color: var(--soft); font: 500 9px 'DM Mono', monospace; }
+.comment-bubble p { margin-top: 5px; color: #cfe1db; font-size: 10px; line-height: 1.4; }
+.comment-bubble small { margin-top: 5px; color: var(--muted); font: 500 8px 'DM Mono', monospace; }
+.comment-form { display: grid; gap: 8px; margin-top: 10px; }
+.comment-form textarea { width: 100%; resize: vertical; padding: 9px; border: 1px solid rgba(159,247,210,.18); border-radius: 7px; color: var(--soft); background: rgba(4,17,16,.45); font: 10px 'DM Mono', monospace; }
+.comment-form .full-button { min-height: 34px; margin: 0; font-size: 9px; }
+.compact-link { margin: 4px 0 0; padding: 0; font-size: 8px; }
+.volunteer-sighting-status { flex-wrap: wrap; }
+.empty-state { padding: 12px; color: var(--muted); font-size: 10px; }
+@media (max-width: 800px) { .sighting-detail-grid { grid-template-columns: 1fr; } .timeline-tools { align-items: flex-end; flex-direction: column; } }

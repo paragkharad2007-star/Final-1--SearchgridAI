@@ -86,4 +86,11 @@ describe("incident coordination API", () => {
     await expect(caller.incident.auditLogs({ code: "CX1008" })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(caller.incident.exportReport({ code: "CX1008" })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
+
+  it("protects sighting evidence and messaging from signed-out users", async () => {
+    const caller = appRouter.createCaller(contextFor(null));
+    await expect(caller.incident.detail({ id: 1 })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    await expect(caller.incident.addComment({ sightingId: 1, body: "Please confirm the north entrance." })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    await expect(caller.incident.uploadEvidence({ sightingId: 1, fileName: "evidence.jpg", contentType: "image/jpeg", dataBase64: "aGVsbG8=" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
 });

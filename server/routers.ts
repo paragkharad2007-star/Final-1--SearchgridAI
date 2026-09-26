@@ -6,11 +6,12 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { emitIncidentEvent } from "./incidentEvents";
-import { createIncident, deleteIncident, ensureIncident, getDb, getIncidentByCode, getIncidentById, getSightingById, getVolunteerProfile, getVolunteerProfileById, insertSighting, listAuditLogs, listSightings, listSightingsByReporter, listUsers, listVolunteerProfiles, resolveIncident, reviewSighting, reviewVolunteerProfile, updateUserRole, upsertVolunteerProfile, writeAuditLog } from "./db";
+import { addSightingComment, addSightingEvidence, createIncident, deleteIncident, ensureIncident, getDb, getIncidentByCode, getIncidentById, getSightingById, getVolunteerProfile, getVolunteerProfileById, insertSighting, listAuditLogs, listSightingComments, listSightingEvidence, listSightings, listSightingsByReporter, listUsers, listVolunteerProfiles, resolveIncident, reviewSighting, reviewVolunteerProfile, updateUserRole, upsertVolunteerProfile, writeAuditLog } from "./db";
 import { incidents } from "../drizzle/schema";
 import { dispatchUrgentEscalation, createIncidentBackup } from "./opsServices";
 import { createCoordinationPlan, syncOfflineActions } from "./coordinationService";
 import type { OfflineAction } from "../shared/coordination";
+import { storagePut } from "./storage";
 
 const DEMO_INCIDENT = { id: 1, code: "CX1008", title: "Missing person — Arjun R.", venue: "City Festival Ground", status: "active" as "active" | "resolved", lastSeenZone: "Food Court", lastSeenAt: new Date("2026-09-14T07:45:00Z") };
 let demoIncident = DEMO_INCIDENT;
@@ -59,10 +60,10 @@ export const appRouter = router({
       const { urgent = false, incidentCode: requestedCode, ...sightingInput } = input;
       const incident = requestedCode ? await getIncidentByCode(requestedCode) : await ensureIncident({ code: DEMO_INCIDENT.code, title: DEMO_INCIDENT.title, venue: DEMO_INCIDENT.venue, lastSeenZone: DEMO_INCIDENT.lastSeenZone, lastSeenAt: DEMO_INCIDENT.lastSeenAt });
       if (!incident || incident.status !== "active") throw new TRPCError({ code: "NOT_FOUND", message: "The selected incident is no longer active." });
-      const saved = await insertSighting({ incidentId: incident.id, ...sightingInput, reportedBy: ctx.user.openId });
-      const sighting = saved ?? { id: Date.now(), incidentId: incident.id, ...sightingInput, status: "new" as const, reportedBy: ctx.user.openId, createdAt: new Date() };
-      if (!saved) demoSightings = [sighting, ...demoSightings].slice(0, 20);
       const isUrgent = urgent || input.confidence >= 80;
+      const saved = await insertSighting({ incidentId: incident.id, ...sightingInput, urgent: isUrgent, reportedBy: ctx.user.openId });
+      const sighting = saved ?? { id: Date.now(), incidentId: incident.id, ...sightingInput, urgent: isUrgent ? 1 : 0, status: "new" as const, reportedBy: ctx.user.openId, createdAt: new Date() };
+      if (!saved) demoSightings = [sighting, ...demoSightings].slice(0, 20);
       addDemoAudit(incident.code, ctx.user.name ?? ctx.user.openId, isUrgent ? "URGENT_SIGHTING" : "SIGHTING_REPORTED", `${input.label} near ${input.zone}`);
       void writeAuditLog({ incidentCode: incident.code, actor: ctx.user.name ?? ctx.user.openId, action: isUrgent ? "URGENT_SIGHTING" : "SIGHTING_REPORTED", detail: `${input.label} near ${input.zone}` });
       if (isUrgent) void dispatchUrgentEscalation({ incidentCode: incident.code, title: input.label, detail: `${input.zone} · confidence ${input.confidence}% · reported by ${ctx.user.name ?? ctx.user.openId}` });
@@ -81,6 +82,34 @@ export const appRouter = router({
       void writeAuditLog({ incidentCode, actor: ctx.user.name ?? ctx.user.openId, action: "SIGHTING_REVIEWED", detail });
       emitIncidentEvent({ type: "sighting_reviewed", incidentCode, payload: { ...updated, status: input.status } });
       return updated ?? { ...existing, status: input.status, reviewedBy: ctx.user.id, reviewedAt: new Date() };
+    }),
+    detail: protectedProcedure.input(z.object({ id: z.number().int() })).query(async ({ ctx, input }) => {
+      const sighting = await getSightingById(input.id);
+      if (!sighting) throw new TRPCError({ code: "NOT_FOUND", message: "Sighting not found" });
+      if (ctx.user.role !== "admin" && sighting.reportedBy !== ctx.user.openId) throw new TRPCError({ code: "FORBIDDEN", message: "You can only view your own sighting details." });
+      return { sighting, evidence: await listSightingEvidence(input.id), comments: await listSightingComments(input.id) };
+    }),
+    addComment: protectedProcedure.input(z.object({ sightingId: z.number().int(), body: z.string().trim().min(1).max(2000) })).mutation(async ({ ctx, input }) => {
+      const sighting = await getSightingById(input.sightingId);
+      if (!sighting) throw new TRPCError({ code: "NOT_FOUND", message: "Sighting not found" });
+      if (ctx.user.role !== "admin" && sighting.reportedBy !== ctx.user.openId) throw new TRPCError({ code: "FORBIDDEN", message: "You can only comment on your own sighting." });
+      const comment = await addSightingComment({ sightingId: input.sightingId, authorId: ctx.user.id, authorName: ctx.user.name ?? ctx.user.email ?? ctx.user.openId, authorRole: ctx.user.role === "admin" ? "coordinator" : "volunteer", body: input.body });
+      const incident = await getIncidentById(sighting.incidentId);
+      emitIncidentEvent({ type: "sighting_comment_added", incidentCode: incident?.code ?? DEMO_INCIDENT.code, payload: { sightingId: input.sightingId, comment, reportedBy: sighting.reportedBy } });
+      return comment ?? { id: Date.now(), sightingId: input.sightingId, authorId: ctx.user.id, authorName: ctx.user.name ?? ctx.user.email ?? ctx.user.openId, authorRole: ctx.user.role === "admin" ? "coordinator" as const : "volunteer" as const, body: input.body, createdAt: new Date() };
+    }),
+    uploadEvidence: protectedProcedure.input(z.object({ sightingId: z.number().int(), fileName: z.string().trim().min(1).max(180), contentType: z.enum(["image/jpeg", "image/png", "image/webp"]), dataBase64: z.string().min(1).max(7000000) })).mutation(async ({ ctx, input }) => {
+      const sighting = await getSightingById(input.sightingId);
+      if (!sighting) throw new TRPCError({ code: "NOT_FOUND", message: "Sighting not found" });
+      if (ctx.user.role !== "admin" && sighting.reportedBy !== ctx.user.openId) throw new TRPCError({ code: "FORBIDDEN", message: "You can only add evidence to your own sighting." });
+      const bytes = Buffer.from(input.dataBase64, "base64");
+      if (bytes.byteLength > 5 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "Evidence must be 5 MB or smaller." });
+      const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const uploaded = await storagePut(`sightings/${input.sightingId}/${ctx.user.id}-${safeName}`, bytes, input.contentType);
+      const evidence = await addSightingEvidence({ sightingId: input.sightingId, uploadedBy: ctx.user.id, fileName: input.fileName, contentType: input.contentType, storageKey: uploaded.key, url: uploaded.url });
+      const incident = await getIncidentById(sighting.incidentId);
+      emitIncidentEvent({ type: "sighting_evidence_added", incidentCode: incident?.code ?? DEMO_INCIDENT.code, payload: { sightingId: input.sightingId, evidence, reportedBy: sighting.reportedBy } });
+      return evidence ?? { id: Date.now(), sightingId: input.sightingId, uploadedBy: ctx.user.id, fileName: input.fileName, contentType: input.contentType, storageKey: uploaded.key, url: uploaded.url, createdAt: new Date() };
     }),
     markZoneSearched: protectedProcedure.input(z.object({ zone: z.string().min(1) })).mutation(({ ctx, input }) => { addDemoAudit("CX1008", ctx.user.name ?? ctx.user.openId, "ZONE_COMPLETED", `Zone ${input.zone} marked searched`); void writeAuditLog({ incidentCode: "CX1008", actor: ctx.user.name ?? ctx.user.openId, action: "ZONE_COMPLETED", detail: `Zone ${input.zone} marked searched` }); emitIncidentEvent({ type: "zone_completed", incidentCode: "CX1008", payload: { zone: input.zone } }); emitIncidentEvent({ type: "assignment_changed", incidentCode: "CX1008", payload: { zone: input.zone, reason: "zone completed" } }); return { success: true, zone: input.zone }; }),
     auditLogs: coordinatorOnly.input(z.object({ code: z.string().min(3) })).query(async ({ input }) => { const rows = await listAuditLogs(input.code); return rows.length ? rows : demoAuditLogs.filter((log) => log.incidentCode === input.code); }),

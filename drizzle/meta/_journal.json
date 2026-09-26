@@ -36,6 +36,13 @@
       "when": 1790451248848,
       "tag": "0004_true_celestials",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1790452787353,
+      "tag": "0005_natural_magma",
+      "breakpoints": true
     }
   ]
 }

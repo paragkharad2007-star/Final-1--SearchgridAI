@@ -48,11 +48,33 @@ export const sightings = mysqlTable("sightings", {
   source: varchar("source", { length: 120 }).notNull(),
   confidence: int("confidence").notNull(),
   reportedBy: varchar("reportedBy", { length: 80 }),
+  urgent: int("urgent").default(0).notNull(),
   status: mysqlEnum("status", ["new", "under_review", "verified", "rejected"]).default("new").notNull(),
   latitude: double("latitude"),
   longitude: double("longitude"),
   reviewedBy: int("reviewedBy"),
   reviewedAt: timestamp("reviewedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const sightingEvidence = mysqlTable("sightingEvidence", {
+  id: int("id").autoincrement().primaryKey(),
+  sightingId: int("sightingId").notNull(),
+  uploadedBy: int("uploadedBy").notNull(),
+  fileName: varchar("fileName", { length: 180 }).notNull(),
+  contentType: varchar("contentType", { length: 120 }).notNull(),
+  storageKey: varchar("storageKey", { length: 255 }).notNull(),
+  url: varchar("url", { length: 500 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const sightingComments = mysqlTable("sightingComments", {
+  id: int("id").autoincrement().primaryKey(),
+  sightingId: int("sightingId").notNull(),
+  authorId: int("authorId").notNull(),
+  authorName: varchar("authorName", { length: 160 }).notNull(),
+  authorRole: mysqlEnum("authorRole", ["coordinator", "volunteer"]).notNull(),
+  body: text("body").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -71,4 +93,6 @@ export type VolunteerProfile = typeof volunteerProfiles.$inferSelect;
 export type InsertVolunteerProfile = typeof volunteerProfiles.$inferInsert;
 export type Incident = typeof incidents.$inferSelect;
 export type Sighting = typeof sightings.$inferSelect;
+export type SightingEvidence = typeof sightingEvidence.$inferSelect;
+export type SightingComment = typeof sightingComments.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;

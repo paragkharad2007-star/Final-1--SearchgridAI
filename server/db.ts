@@ -1,6 +1,6 @@
 import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { auditLogs, InsertUser, incidents, InsertVolunteerProfile, sightings, users, volunteerProfiles } from "../drizzle/schema";
+import { auditLogs, InsertUser, incidents, InsertVolunteerProfile, sightingComments, sightingEvidence, sightings, users, volunteerProfiles } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -130,10 +130,10 @@ export async function getSightingById(id: number) {
   return rows[0];
 }
 
-export async function insertSighting(input: { incidentId: number; zone: string; label: string; source: string; confidence: number; reportedBy?: string; latitude?: number; longitude?: number }) {
+export async function insertSighting(input: { incidentId: number; zone: string; label: string; source: string; confidence: number; reportedBy?: string; latitude?: number; longitude?: number; urgent?: boolean }) {
   const db = await getDb();
   if (!db) return undefined;
-  await db.insert(sightings).values(input);
+  await db.insert(sightings).values({ ...input, urgent: input.urgent ? 1 : 0 });
   const rows = await db.select().from(sightings).where(eq(sightings.incidentId, input.incidentId)).orderBy(desc(sightings.createdAt)).limit(1);
   return rows[0];
 }
@@ -143,6 +143,34 @@ export async function reviewSighting(id: number, reviewedBy: number, status: "un
   if (!db) return undefined;
   await db.update(sightings).set({ status, reviewedBy, reviewedAt: new Date() }).where(eq(sightings.id, id));
   const rows = await db.select().from(sightings).where(eq(sightings.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function listSightingEvidence(sightingId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(sightingEvidence).where(eq(sightingEvidence.sightingId, sightingId)).orderBy(desc(sightingEvidence.createdAt)).limit(20);
+}
+
+export async function addSightingEvidence(input: { sightingId: number; uploadedBy: number; fileName: string; contentType: string; storageKey: string; url: string }) {
+  const db = await getDb();
+  if (!db) return undefined;
+  await db.insert(sightingEvidence).values(input);
+  const rows = await db.select().from(sightingEvidence).where(eq(sightingEvidence.sightingId, input.sightingId)).orderBy(desc(sightingEvidence.createdAt)).limit(1);
+  return rows[0];
+}
+
+export async function listSightingComments(sightingId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(sightingComments).where(eq(sightingComments.sightingId, sightingId)).orderBy(sightingComments.createdAt).limit(100);
+}
+
+export async function addSightingComment(input: { sightingId: number; authorId: number; authorName: string; authorRole: "coordinator" | "volunteer"; body: string }) {
+  const db = await getDb();
+  if (!db) return undefined;
+  await db.insert(sightingComments).values(input);
+  const rows = await db.select().from(sightingComments).where(eq(sightingComments.sightingId, input.sightingId)).orderBy(desc(sightingComments.createdAt)).limit(1);
   return rows[0];
 }
 
@@ -159,6 +187,11 @@ export async function deleteIncident(code: string) {
   const incident = await getIncidentByCode(code);
   if (!incident) return false;
   await db.transaction(async (tx) => {
+    const incidentSightings = await tx.select({ id: sightings.id }).from(sightings).where(eq(sightings.incidentId, incident.id));
+    for (const row of incidentSightings) {
+      await tx.delete(sightingComments).where(eq(sightingComments.sightingId, row.id));
+      await tx.delete(sightingEvidence).where(eq(sightingEvidence.sightingId, row.id));
+    }
     await tx.delete(sightings).where(eq(sightings.incidentId, incident.id));
     await tx.delete(incidents).where(and(eq(incidents.id, incident.id), eq(incidents.code, code)));
   });
