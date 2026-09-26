@@ -14,7 +14,7 @@ function contextFor(role: "admin" | "user" | null): TrpcContext {
 describe("incident coordination API", () => {
   it("exposes a demo incident to public command-center previews", async () => {
     const result = await appRouter.createCaller(contextFor(null)).incident.current();
-    expect(result.incident.code).toBe("CX1008");
+    expect(result.incident.code).toMatch(/^[A-Z0-9]+$/);
     expect(result.incident.status).toBe("active");
   });
 

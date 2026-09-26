@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -32,7 +33,15 @@ export const appRouter = router({
   }),
   incident: router({
     list: coordinatorOnly.query(async () => { const db = await getDb(); if (!db) return [demoIncident]; return db.select().from(incidents).orderBy(incidents.updatedAt).limit(50); }),
-    current: publicProcedure.query(async () => { const incident = await ensureIncident({ code: DEMO_INCIDENT.code, title: DEMO_INCIDENT.title, venue: DEMO_INCIDENT.venue, lastSeenZone: DEMO_INCIDENT.lastSeenZone, lastSeenAt: DEMO_INCIDENT.lastSeenAt }); const rows = incident ? await listSightings(incident.id) : demoSightings; return { incident: incident ?? demoIncident, sightings: rows.length ? rows : demoSightings }; }),
+    current: publicProcedure.query(async () => {
+      const db = await getDb();
+      const incident = db
+        ? (await db.select().from(incidents).where(eq(incidents.status, "active")).orderBy(desc(incidents.updatedAt)).limit(1))[0]
+        : undefined;
+      const activeIncident = incident ?? await ensureIncident({ code: DEMO_INCIDENT.code, title: DEMO_INCIDENT.title, venue: DEMO_INCIDENT.venue, lastSeenZone: DEMO_INCIDENT.lastSeenZone, lastSeenAt: DEMO_INCIDENT.lastSeenAt });
+      const rows = activeIncident ? await listSightings(activeIncident.id) : demoSightings;
+      return { incident: activeIncident ?? demoIncident, sightings: rows.length ? rows : activeIncident?.code === DEMO_INCIDENT.code ? demoSightings : [] };
+    }),
     create: coordinatorOnly.input(z.object({ code: z.string().trim().min(3).max(32), title: z.string().trim().min(3), venue: z.string().trim().min(2), lastSeenZone: z.string().trim().min(2) })).mutation(async ({ ctx, input }) => { const existing = await getIncidentByCode(input.code); if (existing) throw new TRPCError({ code: "CONFLICT", message: `Incident code ${input.code} already exists. Choose a new code.` }); let created; try { created = await createIncident({ ...input, lastSeenAt: new Date() }); } catch (error) { if ((error as { code?: string }).code === "ER_DUP_ENTRY") throw new TRPCError({ code: "CONFLICT", message: `Incident code ${input.code} already exists. Choose a new code.` }); throw error; } const incident = created ?? { id: Date.now(), ...input, status: "active" as const, lastSeenAt: new Date() }; demoIncident = incident; addDemoAudit(incident.code, ctx.user.name ?? ctx.user.openId, "INCIDENT_CREATED", `New search started at ${incident.venue}`); void writeAuditLog({ incidentCode: incident.code, actor: ctx.user.name ?? ctx.user.openId, action: "INCIDENT_CREATED", detail: `New search started at ${incident.venue}` }); emitIncidentEvent({ type: "incident_created", incidentCode: incident.code, payload: incident }); return incident; }),
     remove: coordinatorOnly.input(z.object({ code: z.string().min(3) })).mutation(async ({ ctx, input }) => {
       const existing = await getIncidentByCode(input.code);
