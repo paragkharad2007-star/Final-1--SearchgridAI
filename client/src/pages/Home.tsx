@@ -155,6 +155,7 @@ function CommandCenter({ onModeChange, mode }: { onModeChange: (mode: Mode) => v
   const { user } = useAuth();
   const incidentQuery = trpc.incident.current.useQuery();
   const reportMutation = trpc.incident.reportSighting.useMutation();
+  const createMutation = trpc.incident.create.useMutation();
   const markMutation = trpc.incident.markZoneSearched.useMutation();
   const [zones, setZones] = useState<Zone[]>(ZONE_SEEDS);
   const [selectedId, setSelectedId] = useState("B");
@@ -162,6 +163,10 @@ function CommandCenter({ onModeChange, mode }: { onModeChange: (mode: Mode) => v
   const [elapsed, setElapsed] = useState(2);
   const [now, setNow] = useState(() => new Date());
   const [showIncidentForm, setShowIncidentForm] = useState(false);
+  const [incidentCode, setIncidentCode] = useState("");
+  const [incidentTitle, setIncidentTitle] = useState("");
+  const [incidentVenue, setIncidentVenue] = useState("");
+  const [incidentZone, setIncidentZone] = useState("");
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [toast, setToast] = useState("");
   const [sightingBoost, setSightingBoost] = useState(12);
@@ -248,6 +253,28 @@ function CommandCenter({ onModeChange, mode }: { onModeChange: (mode: Mode) => v
     recalculate("new sighting near Central Lawn");
   };
 
+  const createNewIncident = () => {
+    const code = incidentCode.trim().toUpperCase();
+    const title = incidentTitle.trim();
+    const venue = incidentVenue.trim();
+    const lastSeenZone = incidentZone.trim();
+    if (!code || !title || !venue || !lastSeenZone) {
+      setToast("Complete the incident code, title, venue, and last-seen zone");
+      return;
+    }
+    createMutation.mutate({ code, title, venue, lastSeenZone }, {
+      onSuccess: () => {
+        setShowIncidentForm(false);
+        setToast(`Incident ${code} created · search coordination is ready`);
+        setIncidentCode("");
+        setIncidentTitle("");
+        setIncidentVenue("");
+        setIncidentZone("");
+      },
+      onError: (error) => setToast(error.message || "Coordinator access is required to create an incident"),
+    });
+  };
+
   const roleLabel = user?.role === "admin" ? "COORDINATOR" : user ? "VOLUNTEER" : "DEMO OPS";
 
   return (
@@ -261,7 +288,7 @@ function CommandCenter({ onModeChange, mode }: { onModeChange: (mode: Mode) => v
       <div className="view-switcher"><div className="view-switcher-inner"><button className={cn(mode === "command" && "active")} onClick={() => onModeChange("command")}><Laptop size={15} /> Command Center</button><button className={cn(mode === "volunteer" && "active")} onClick={() => onModeChange("volunteer")}><Smartphone size={15} /> Volunteer PWA</button><button className={cn(mode === "admin" && "active")} onClick={() => onModeChange("admin")}><ShieldCheck size={15} /> Admin</button></div><div className="sync-strip"><Wifi size={13} /> Live sync <span>•</span> Last update {formatClock(now)}</div></div>
 
       <main className="dashboard-content">
-        <div className="page-heading"><div><p className="eyebrow">INCIDENT  /  CX1008  /  ROUND 1</p><h1>City Festival Ground <span>·</span> <em>Live Operations</em></h1></div><div className="heading-actions"><button className="secondary-button" onClick={() => setShowIncidentForm(true)}><SlidersHorizontal size={16} /> Incident details</button><button className="primary-button" onClick={reportSighting}><MessageSquareWarning size={16} /> Report sighting</button></div></div>
+        <div className="page-heading"><div><p className="eyebrow">INCIDENT  /  CX1008  /  ROUND 1</p><h1>City Festival Ground <span>·</span> <em>Live Operations</em></h1></div><div className="heading-actions"><button className="secondary-button" onClick={() => setShowIncidentForm(true)}><SlidersHorizontal size={16} /> Create incident</button><button className="primary-button" onClick={reportSighting}><MessageSquareWarning size={16} /> Report sighting</button></div></div>
 
         <div className="kpi-grid">
           <div className="kpi-card accent-red"><div className="kpi-top"><span>SEARCH PRIORITY</span><IconBadge tone="red"><Flame size={16} /></IconBadge></div><div className="kpi-value">HIGH <ArrowUpRight size={20} /></div><div className="kpi-foot"><span className="trend-up">+14%</span> since last update</div></div>
@@ -283,7 +310,7 @@ function CommandCenter({ onModeChange, mode }: { onModeChange: (mode: Mode) => v
       </main>
 
       {toast && <div className="toast"><CheckCircle2 size={17} /><span>{toast}</span><button onClick={() => setToast("")}><X size={14} /></button></div>}
-      {showIncidentForm && <div className="modal-backdrop" onClick={() => setShowIncidentForm(false)}><div className="incident-modal" onClick={(event) => event.stopPropagation()}><div className="modal-header"><div><div className="panel-kicker">ACTIVE INCIDENT</div><h2>Missing person details</h2></div><button className="icon-button subtle" onClick={() => setShowIncidentForm(false)}><X size={17} /></button></div><div className="incident-person"><div className="person-photo">AR</div><div><strong>Arjun R.</strong><span>Child · 8 years · blue hoodie</span><small>Last seen at Food Court, facing north</small></div><LivePill tone="red">ACTIVE</LivePill></div><div className="modal-stats"><div><span>ELAPSED</span><strong>00:{String(elapsed).padStart(2, "0")}</strong></div><div><span>LAST SIGHTING</span><strong>Food Court</strong></div><div><span>CONFIDENCE</span><strong>82%</strong></div></div><div className="modal-note"><AlertTriangle size={15} /><span>Keep the child description and last-seen details current. New data shifts volunteer assignments.</span></div><button className="full-button" onClick={() => { setShowIncidentForm(false); setToast("Incident details are current · no changes needed"); }}>Close incident details</button></div></div>}
+      {showIncidentForm && <div className="modal-backdrop" onClick={() => setShowIncidentForm(false)}><form className="incident-modal incident-create-modal" onSubmit={(event) => { event.preventDefault(); createNewIncident(); }} onClick={(event) => event.stopPropagation()}><div className="modal-header"><div><div className="panel-kicker">COORDINATOR ACTION</div><h2>Create a new incident</h2></div><button type="button" className="icon-button subtle" aria-label="Close create incident form" onClick={() => setShowIncidentForm(false)}><X size={17} /></button></div><p className="incident-form-intro">Start a dedicated search operation and make the incident available to your volunteer team.</p><div className="incident-form-grid"><label><span>INCIDENT CODE</span><input value={incidentCode} onChange={(event) => setIncidentCode(event.target.value)} placeholder="e.g. CX1012" maxLength={32} autoFocus /></label><label><span>INCIDENT TITLE</span><input value={incidentTitle} onChange={(event) => setIncidentTitle(event.target.value)} placeholder="e.g. Missing person — Maya K." /></label><label><span>VENUE</span><input value={incidentVenue} onChange={(event) => setIncidentVenue(event.target.value)} placeholder="e.g. City Festival Ground" /></label><label><span>LAST-SEEN ZONE</span><input value={incidentZone} onChange={(event) => setIncidentZone(event.target.value)} placeholder="e.g. North entrance" /></label></div><div className="modal-note"><AlertTriangle size={15} /><span>Creating an incident requires coordinator access. The start time is recorded automatically.</span></div><div className="incident-form-actions"><button type="button" className="secondary-button" onClick={() => setShowIncidentForm(false)}>Cancel</button><button type="submit" className="full-button" disabled={createMutation.isPending}>{createMutation.isPending ? "Creating incident…" : "Start incident"}</button></div></form></div>}
     </div>
   );
 }

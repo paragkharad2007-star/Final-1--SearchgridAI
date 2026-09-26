@@ -18,6 +18,19 @@ describe("incident coordination API", () => {
     expect(result.incident.status).toBe("active");
   });
 
+  it("allows a coordinator to create a new incident", async () => {
+    const code = `TEST${Date.now()}`;
+    const result = await appRouter.createCaller(contextFor("admin")).incident.create({
+      code,
+      title: "Test missing person",
+      venue: "Test venue",
+      lastSeenZone: "North entrance",
+    });
+    expect(result.code).toBe(code);
+    expect(result.status).toBe("active");
+    expect(result.lastSeenZone).toBe("North entrance");
+  });
+
   it("allows an authenticated volunteer to mark a zone searched and emits an update", async () => {
     const received: unknown[] = [];
     const listener = (event: unknown) => received.push(event);

@@ -177,3 +177,14 @@ h2 { color: #eff8f4; font-size: 16px; letter-spacing: -.025em; }
 .volunteer-signin-button { min-height: 32px; padding: 0 10px; color: var(--mint); border-color: rgba(159,247,210,.28); font-size: 9px; white-space: nowrap; }
 @media (max-width: 620px) { .volunteer-signin-button { padding: 0 8px; font-size: 8px; } .volunteer-signin-button svg { display: none; } }
 .volunteer-signin-button.volunteer-signed-in { color: var(--mint); border-color: rgba(159,247,210,.38); background: rgba(159,247,210,.09); cursor: default; }
+.incident-create-modal { max-height: min(720px, calc(100vh - 40px)); overflow-y: auto; }
+.incident-form-intro { margin: 10px 0 18px; color: #9bb5ac; font-size: 10px; line-height: 1.5; }
+.incident-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.incident-form-grid label { display: grid; gap: 6px; }
+.incident-form-grid label span { color: #7f9c92; font: 500 8px 'DM Mono', monospace; letter-spacing: .06em; }
+.incident-form-grid input { width: 100%; min-height: 38px; padding: 0 10px; color: #e4f4ee; border: 1px solid rgba(160,202,190,.18); border-radius: 8px; outline: none; background: rgba(255,255,255,.035); font: 500 11px 'Manrope', sans-serif; }
+.incident-form-grid input::placeholder { color: #55736b; }
+.incident-form-grid input:focus { border-color: var(--mint); box-shadow: 0 0 0 3px rgba(159,247,210,.08); }
+.incident-form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.incident-form-actions .full-button { width: auto; min-width: 150px; margin-top: 0; }
+@media (max-width: 620px) { .incident-form-grid { grid-template-columns: 1fr; } .incident-form-actions { flex-direction: column-reverse; } .incident-form-actions > * { width: 100% !important; } }
