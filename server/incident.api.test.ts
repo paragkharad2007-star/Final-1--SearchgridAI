@@ -40,6 +40,10 @@ describe("incident coordination API", () => {
     })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
+  it("keeps incident deletion protected from volunteer accounts", async () => {
+    await expect(appRouter.createCaller(contextFor("user")).incident.remove({ code: "CX1008" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
   it("returns a conflict instead of a raw database error for duplicate codes", async () => {
     await expect(appRouter.createCaller(contextFor("admin")).incident.create({
       code: "CX1008",

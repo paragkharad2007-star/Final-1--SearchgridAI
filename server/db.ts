@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { auditLogs, InsertUser, incidents, InsertVolunteerProfile, sightings, users, volunteerProfiles } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -123,6 +123,18 @@ export async function createIncident(input: { code: string; title: string; venue
   if (!db) return undefined;
   await db.insert(incidents).values(input);
   return getIncidentByCode(input.code);
+}
+
+export async function deleteIncident(code: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const incident = await getIncidentByCode(code);
+  if (!incident) return false;
+  await db.transaction(async (tx) => {
+    await tx.delete(sightings).where(eq(sightings.incidentId, incident.id));
+    await tx.delete(incidents).where(and(eq(incidents.id, incident.id), eq(incidents.code, code)));
+  });
+  return true;
 }
 
 export async function resolveIncident(code: string) {

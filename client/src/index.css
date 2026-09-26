@@ -244,3 +244,9 @@ h2 { color: #eff8f4; font-size: 16px; letter-spacing: -.025em; }
 .account-switch-dialog [data-slot="alert-dialog-title"] { color: #e9fff7; }
 .account-switch-dialog [data-slot="alert-dialog-description"] { color: #9ab9ae; line-height: 1.6; }
 @media (max-width: 760px) { .account-identity { display: none; } .volunteer-new-window-button { display: none; } }
+.danger-icon { color: #ff9f95; }
+.delete-incident-modal { border-color: rgba(255,122,110,.32); }
+.delete-warning { margin: 12px 0 22px; color: #b9cbc4; font-size: 11px; line-height: 1.6; }
+.delete-warning strong { color: #ffb8ae; }
+.danger-button { background: #a84039; border-color: #d96a60; color: #fff4f2; }
+.danger-button:hover { background: #c14e46; }
