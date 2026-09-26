@@ -1,19 +1,23 @@
 import { useState } from "react";
 import { ArchiveRestore, ArrowLeft, Check, Crosshair, Download, FileClock, LockKeyhole, Plus, RefreshCw, ShieldCheck, Siren, UserCog, Users, X } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { startLogin } from "@/const";
 
 type AdminPanelProps = { onBack: () => void };
 const demoUsers = [{ id: 1, name: "Operations Coordinator", email: "ops@searchgrid.demo", role: "admin" as const, lastSignedIn: new Date() }, { id: 2, name: "Field Volunteer V07", email: "v07@searchgrid.demo", role: "user" as const, lastSignedIn: new Date() }];
 
 export default function AdminPanel({ onBack }: AdminPanelProps) {
-  const usersQuery = trpc.admin.users.useQuery(undefined, { retry: false });
-  const incidentsQuery = trpc.incident.list.useQuery(undefined, { retry: false });
-  const auditQuery = trpc.incident.auditLogs.useQuery({ code: "CX1008" }, { retry: false });
+  const { user, loading } = useAuth();
+  const canManage = user?.role === "admin";
+  const usersQuery = trpc.admin.users.useQuery(undefined, { enabled: canManage, retry: false });
+  const incidentsQuery = trpc.incident.list.useQuery(undefined, { enabled: canManage, retry: false });
+  const auditQuery = trpc.incident.auditLogs.useQuery({ code: "CX1008" }, { enabled: canManage, retry: false });
   const reportQuery = trpc.incident.exportReport.useQuery({ code: "CX1008" }, { enabled: false, retry: false });
   const roleMutation = trpc.admin.setRole.useMutation({ onSuccess: () => { usersQuery.refetch(); auditQuery.refetch(); } });
   const createMutation = trpc.incident.create.useMutation({ onSuccess: () => { incidentsQuery.refetch(); auditQuery.refetch(); setShowCreate(false); setNotice("Incident created and broadcast to connected teams"); }, onError: (error) => { setNotice(error.message || "Unable to create incident"); } });
   const resolveMutation = trpc.incident.resolve.useMutation({ onSuccess: () => { incidentsQuery.refetch(); auditQuery.refetch(); } });
-  const backupQuery = trpc.admin.backupStatus.useQuery(undefined, { retry: false });
+  const backupQuery = trpc.admin.backupStatus.useQuery(undefined, { enabled: canManage, retry: false });
   const backupMutation = trpc.admin.backupNow.useMutation({ onSuccess: (backup) => { backupQuery.refetch(); setNotice(`Cloud backup uploaded · ${backup.url}`); }, onError: () => setNotice("Cloud backup needs coordinator access and storage configuration") });
   const [showCreate, setShowCreate] = useState(false);
   const [notice, setNotice] = useState("");
@@ -22,6 +26,10 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
   const incidents = incidentsQuery.data?.length ? incidentsQuery.data : [{ id: 1, code: "CX1008", title: "Missing person — Arjun R.", venue: "City Festival Ground", status: "active", lastSeenZone: "Food Court", lastSeenAt: new Date() }];
   const auditLogs = auditQuery.data ?? [{ id: 1, incidentCode: "CX1008", actor: "Operations Coordinator", action: "INCIDENT_STARTED", detail: "Search grid activated at City Festival Ground", createdAt: new Date() }];
   const safe = (run: () => void) => { try { run(); } catch { setNotice("Sign in as a coordinator to sync this change"); } };
+  if (loading) return <div className="admin-shell"><main className="admin-access-gate"><ShieldCheck size={34} className="admin-shield" /><h1>Checking coordinator access…</h1><p>Verifying your signed-in account.</p></main></div>;
+  if (!user) return <div className="admin-shell"><main className="admin-access-gate"><ShieldCheck size={34} className="admin-shield" /><h1>Coordinator sign in required</h1><p>Sign in with your coordinator account to create incidents, manage roles, and export reports.</p><div className="admin-access-actions"><button className="primary-button" onClick={startLogin}>Coordinator sign in</button><button className="secondary-button" onClick={onBack}>Back to command center</button></div></main></div>;
+  if (!canManage) return <div className="admin-shell"><main className="admin-access-gate"><ShieldCheck size={34} className="admin-shield" /><h1>Coordinator role required</h1><p>You are signed in as a volunteer. Ask an existing coordinator to promote this account before opening the Admin console.</p><div className="admin-access-actions"><button className="secondary-button" onClick={onBack}>Back to command center</button></div></main></div>;
+
   const downloadReport = async (format: "json" | "csv") => {
     const result = await reportQuery.refetch();
     if (!result.data) { setNotice("Sign in as a coordinator to export reports"); return; }

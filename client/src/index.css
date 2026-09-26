@@ -192,3 +192,9 @@ h2 { color: #eff8f4; font-size: 16px; letter-spacing: -.025em; }
 .coordinator-access-button:hover { color: #dff7ec; border-color: rgba(159,247,210,.36); background: rgba(159,247,210,.07); }
 .coordinator-access-button.coordinator-access-active { color: var(--mint); border-color: rgba(159,247,210,.34); background: rgba(159,247,210,.08); cursor: default; }
 @media (max-width: 760px) { .coordinator-access-button span { display: none; } .coordinator-access-button { padding: 0 8px; } }
+.admin-access-gate { min-height: 70vh; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 32px; text-align: center; }
+.admin-access-gate .admin-shield { color: var(--mint); }
+.admin-access-gate h1 { margin: 0; color: #eff8f4; font-size: clamp(24px, 4vw, 36px); }
+.admin-access-gate p { max-width: 520px; margin: 0; color: #9bb5ac; font-size: 12px; line-height: 1.6; }
+.admin-access-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+@media (max-width: 520px) { .admin-access-actions { flex-direction: column; width: 100%; } .admin-access-actions > * { width: min(300px, 100%); } }
