@@ -188,3 +188,7 @@ h2 { color: #eff8f4; font-size: 16px; letter-spacing: -.025em; }
 .incident-form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 .incident-form-actions .full-button { width: auto; min-width: 150px; margin-top: 0; }
 @media (max-width: 620px) { .incident-form-grid { grid-template-columns: 1fr; } .incident-form-actions { flex-direction: column-reverse; } .incident-form-actions > * { width: 100% !important; } }
+.coordinator-access-button { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 10px; color: #a8c2b9; border: 1px solid rgba(160,202,190,.2); border-radius: 8px; background: rgba(255,255,255,.025); cursor: pointer; font: 500 8px 'DM Mono', monospace; letter-spacing: .04em; white-space: nowrap; }
+.coordinator-access-button:hover { color: #dff7ec; border-color: rgba(159,247,210,.36); background: rgba(159,247,210,.07); }
+.coordinator-access-button.coordinator-access-active { color: var(--mint); border-color: rgba(159,247,210,.34); background: rgba(159,247,210,.08); cursor: default; }
+@media (max-width: 760px) { .coordinator-access-button span { display: none; } .coordinator-access-button { padding: 0 8px; } }

@@ -275,6 +275,18 @@ function CommandCenter({ onModeChange, mode }: { onModeChange: (mode: Mode) => v
     });
   };
 
+  const coordinatorAccess = () => {
+    if (!user) {
+      startLogin();
+      return;
+    }
+    if (user.role !== "admin") {
+      setToast("Coordinator access required · ask an admin to promote this account");
+      return;
+    }
+    setToast("Coordinator access active · incident controls are enabled");
+  };
+
   const roleLabel = user?.role === "admin" ? "COORDINATOR" : user ? "VOLUNTEER" : "DEMO OPS";
 
   return (
@@ -282,7 +294,7 @@ function CommandCenter({ onModeChange, mode }: { onModeChange: (mode: Mode) => v
       <header className="topbar">
         <div className="brand-lockup"><div className="brand-mark"><Crosshair size={21} strokeWidth={2.2} /></div><div><div className="brand-name">SEARCHGRID <span>AI</span></div><div className="brand-subtitle">EMERGENCY SEARCH COORDINATION</div></div></div>
         <div className="topbar-center"><LivePill><span className="status-dot" /> SYSTEM ONLINE</LivePill><span className="incident-label"><Siren size={14} /> MISSING PERSON — ACTIVE</span></div>
-        <div className="topbar-actions"><div className="time-readout"><span>{formatClock(now)}</span><small>LOCAL TIME · UTC+05:30</small></div><button className="icon-button" aria-label="Enable urgent notifications" onClick={() => requestUrgentNotifications(setToast)}><Bell size={17} /><i /></button><button className="avatar-button">{user?.name?.slice(0, 2).toUpperCase() ?? "OC"}<span>{roleLabel}</span></button></div>
+        <div className="topbar-actions"><div className="time-readout"><span>{formatClock(now)}</span><small>LOCAL TIME · UTC+05:30</small></div><button className="icon-button" aria-label="Enable urgent notifications" onClick={() => requestUrgentNotifications(setToast)}><Bell size={17} /><i /></button><button className={cn("coordinator-access-button", user?.role === "admin" && "coordinator-access-active")} onClick={coordinatorAccess}><ShieldCheck size={14} /> <span>{user?.role === "admin" ? "COORDINATOR SIGNED IN" : user ? "VOLUNTEER ACCOUNT" : "COORDINATOR SIGN IN"}</span></button></div>
       </header>
 
       <div className="view-switcher"><div className="view-switcher-inner"><button className={cn(mode === "command" && "active")} onClick={() => onModeChange("command")}><Laptop size={15} /> Command Center</button><button className={cn(mode === "volunteer" && "active")} onClick={() => onModeChange("volunteer")}><Smartphone size={15} /> Volunteer PWA</button><button className={cn(mode === "admin" && "active")} onClick={() => onModeChange("admin")}><ShieldCheck size={15} /> Admin</button></div><div className="sync-strip"><Wifi size={13} /> Live sync <span>•</span> Last update {formatClock(now)}</div></div>

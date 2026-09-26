@@ -31,6 +31,15 @@ describe("incident coordination API", () => {
     expect(result.lastSeenZone).toBe("North entrance");
   });
 
+  it("keeps incident creation protected from volunteer accounts", async () => {
+    await expect(appRouter.createCaller(contextFor("user")).incident.create({
+      code: `VOL${Date.now()}`,
+      title: "Unauthorized test incident",
+      venue: "Test venue",
+      lastSeenZone: "North entrance",
+    })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
   it("allows an authenticated volunteer to mark a zone searched and emits an update", async () => {
     const received: unknown[] = [];
     const listener = (event: unknown) => received.push(event);
