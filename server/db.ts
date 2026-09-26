@@ -22,7 +22,9 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (user[field] !== undefined) { values[field] = user[field] ?? null; updateSet[field] = user[field] ?? null; }
   }
   values.role = user.role ?? (user.openId === ENV.ownerOpenId ? "admin" : "user");
-  updateSet.role = values.role;
+  // Do not downgrade an existing coordinator when OAuth omits the role on a later login.
+  // The database remains the source of truth for manually promoted accounts.
+  if (user.role !== undefined || user.openId === ENV.ownerOpenId) updateSet.role = values.role;
   values.lastSignedIn = user.lastSignedIn ?? new Date();
   updateSet.lastSignedIn = values.lastSignedIn;
   await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
