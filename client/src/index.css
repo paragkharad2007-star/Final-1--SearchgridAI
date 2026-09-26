@@ -238,3 +238,9 @@ h2 { color: #eff8f4; font-size: 16px; letter-spacing: -.025em; }
 @media (max-width: 620px) { .profile-form-grid { grid-template-columns: 1fr; } .profile-wide { grid-column: auto; } .volunteer-review-row { grid-template-columns: 1fr; gap: 10px; } .volunteer-review-actions { display: grid; grid-template-columns: 1fr 1fr; } .volunteer-review-actions label { grid-column: 1 / -1; } .volunteer-review-actions select { width: 100%; } .volunteer-profile-button { display: inline-flex; } }
 .volunteer-switch-button { min-height: 32px; padding: 0 10px; color: #ffd779; border-color: rgba(255,215,121,.28); font-size: 10px; }
 .volunteer-signout-button { min-height: 32px; padding: 0 10px; color: #ffb8ae; border-color: rgba(255,122,110,.28); font-size: 10px; }
+.account-identity { color: #b5d7ca; }
+.volunteer-new-window-button { min-height: 32px; padding: 0 10px; color: #9fd9ff; border-color: rgba(159,217,255,.28); font-size: 10px; }
+.account-switch-dialog { color: #dff4ec; border-color: rgba(159,247,210,.2); background: #0b1b1a; }
+.account-switch-dialog [data-slot="alert-dialog-title"] { color: #e9fff7; }
+.account-switch-dialog [data-slot="alert-dialog-description"] { color: #9ab9ae; line-height: 1.6; }
+@media (max-width: 760px) { .account-identity { display: none; } .volunteer-new-window-button { display: none; } }
