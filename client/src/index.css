@@ -250,3 +250,7 @@ h2 { color: #eff8f4; font-size: 16px; letter-spacing: -.025em; }
 .delete-warning strong { color: #ffb8ae; }
 .danger-button { background: #a84039; border-color: #d96a60; color: #fff4f2; }
 .danger-button:hover { background: #c14e46; }
+.incident-selector { display: flex; flex-direction: column; gap: 4px; min-width: 220px; }
+.incident-selector span { color: var(--muted); font: 10px 'DM Mono', monospace; letter-spacing: .12em; }
+.incident-selector select { min-height: 38px; max-width: 300px; padding: 0 28px 0 12px; border: 1px solid rgba(159,247,210,.24); border-radius: 8px; color: var(--mint); background: var(--panel-2); font-size: 11px; }
+@media (max-width: 900px) { .incident-selector { width: 100%; } .incident-selector select { max-width: none; } }

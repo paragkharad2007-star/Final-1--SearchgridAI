@@ -157,7 +157,10 @@ function VenueMap({ zones, selectedId, onSelect, volunteerLocations }: { zones: 
 function CommandCenter({ onModeChange, mode }: { onModeChange: (mode: Mode) => void; mode: Mode }) {
   const { user } = useAuth();
   const isCoordinator = user?.role === "admin";
-  const incidentQuery = trpc.incident.current.useQuery();
+  const incidentListQuery = trpc.incident.list.useQuery(undefined, { enabled: isCoordinator, refetchInterval: 5000, retry: false });
+  const [selectedIncidentCode, setSelectedIncidentCode] = useState("");
+  const selectedIncidentInput = useMemo(() => selectedIncidentCode ? { code: selectedIncidentCode } : undefined, [selectedIncidentCode]);
+  const incidentQuery = trpc.incident.current.useQuery(selectedIncidentInput, { refetchInterval: 5000 });
   const reportMutation = trpc.incident.reportSighting.useMutation();
   const createMutation = trpc.incident.create.useMutation();
   const markMutation = trpc.incident.markZoneSearched.useMutation();
@@ -175,6 +178,15 @@ function CommandCenter({ onModeChange, mode }: { onModeChange: (mode: Mode) => v
   const [toast, setToast] = useState("");
   const [sightingBoost, setSightingBoost] = useState(12);
   const [volunteerLocations, setVolunteerLocations] = useState<Record<string, { lat: number; lng: number; accuracy: number }>>({});
+  const dashboardIncident = incidentQuery.data?.incident;
+  const dashboardIncidentCode = dashboardIncident?.code ?? selectedIncidentCode ?? "CX1008";
+
+  useEffect(() => {
+    const firstActive = incidentListQuery.data?.find((incident) => incident.status === "active");
+    if (firstActive && (!selectedIncidentCode || !incidentListQuery.data?.some((incident) => incident.code === selectedIncidentCode))) {
+      setSelectedIncidentCode(firstActive.code);
+    }
+  }, [incidentListQuery.data, selectedIncidentCode]);
 
   const handleRealtime = useCallback((event: IncidentRealtimeEvent) => {
     if (event.type === "sighting_reported") {
@@ -197,7 +209,7 @@ function CommandCenter({ onModeChange, mode }: { onModeChange: (mode: Mode) => v
     }
   }, []);
 
-  useIncidentRealtime("CX1008", handleRealtime);
+  useIncidentRealtime(dashboardIncidentCode, handleRealtime);
 
   useEffect(() => {
     const rows = incidentQuery.data?.sightings;
@@ -271,6 +283,8 @@ function CommandCenter({ onModeChange, mode }: { onModeChange: (mode: Mode) => v
     createMutation.mutate({ code, title, venue, lastSeenZone }, {
       onSuccess: () => {
         setShowIncidentForm(false);
+        setSelectedIncidentCode(code);
+        void incidentListQuery.refetch();
         setToast(`Incident ${code} created · search coordination is ready`);
         setIncidentCode("");
         setIncidentTitle("");
@@ -299,14 +313,14 @@ function CommandCenter({ onModeChange, mode }: { onModeChange: (mode: Mode) => v
     <div className="app-shell">
       <header className="topbar">
         <div className="brand-lockup"><div className="brand-mark"><Crosshair size={21} strokeWidth={2.2} /></div><div><div className="brand-name">SEARCHGRID <span>AI</span></div><div className="brand-subtitle">EMERGENCY SEARCH COORDINATION</div></div></div>
-        <div className="topbar-center"><LivePill><span className="status-dot" /> SYSTEM ONLINE</LivePill><span className="incident-label"><Siren size={14} /> MISSING PERSON — ACTIVE</span></div>
+        <div className="topbar-center"><LivePill><span className="status-dot" /> SYSTEM ONLINE</LivePill><span className="incident-label"><Siren size={14} /> {dashboardIncident?.title ?? "MISSING PERSON"} — {dashboardIncident?.status?.toUpperCase() ?? "ACTIVE"}</span></div>
         <div className="topbar-actions"><div className="time-readout"><span>{formatClock(now)}</span><small>LOCAL TIME · UTC+05:30</small></div><button className="icon-button" aria-label="Enable urgent notifications" onClick={() => requestUrgentNotifications(setToast)}><Bell size={17} /><i /></button><button className={cn("coordinator-access-button", user?.role === "admin" && "coordinator-access-active")} onClick={coordinatorAccess}><ShieldCheck size={14} /> <span>{user?.role === "admin" ? "COORDINATOR SIGNED IN" : user ? "VOLUNTEER ACCOUNT" : "COORDINATOR SIGN IN"}</span></button></div>
       </header>
 
       <div className="view-switcher"><div className="view-switcher-inner"><button className={cn(mode === "command" && "active")} onClick={() => onModeChange("command")}><Laptop size={15} /> Command Center</button><button className={cn(mode === "volunteer" && "active")} onClick={() => onModeChange("volunteer")}><Smartphone size={15} /> Volunteer PWA</button><button className={cn(mode === "admin" && "active", !isCoordinator && "role-disabled")} disabled={!isCoordinator} title={isCoordinator ? "Open coordinator controls" : "Coordinator access required"} onClick={() => onModeChange("admin")}><ShieldCheck size={15} /> Admin</button></div><div className="sync-strip"><Wifi size={13} /> Live sync <span>•</span> Last update {formatClock(now)}</div></div>
 
       <main className="dashboard-content">
-        <div className="page-heading"><div><p className="eyebrow">INCIDENT  /  CX1008  /  ROUND 1</p><h1>City Festival Ground <span>·</span> <em>Live Operations</em></h1></div><div className="heading-actions"><button className="secondary-button" disabled={!isCoordinator} title={isCoordinator ? "Create a new incident" : "Coordinator access required"} onClick={() => setShowIncidentForm(true)}><SlidersHorizontal size={16} /> Create incident</button><button className="primary-button" onClick={reportSighting}><MessageSquareWarning size={16} /> Report sighting</button></div></div>
+        <div className="page-heading"><div><p className="eyebrow">INCIDENT  /  {dashboardIncidentCode}  /  ROUND 1</p><h1>{dashboardIncident?.venue ?? "City Festival Ground"} <span>·</span> <em>Live Operations</em></h1></div><div className="heading-actions">{isCoordinator && <label className="incident-selector"><span>ACTIVE INCIDENT</span><select value={selectedIncidentCode} onChange={(event) => { setSelectedIncidentCode(event.target.value); setSightings([]); }} disabled={incidentListQuery.isLoading}><option value="">Select incident</option>{(incidentListQuery.data ?? []).filter((incident) => incident.status === "active").map((incident) => <option key={incident.code} value={incident.code}>{incident.code} · {incident.title}</option>)}</select></label>}<button className="secondary-button" disabled={!isCoordinator} title={isCoordinator ? "Create a new incident" : "Coordinator access required"} onClick={() => setShowIncidentForm(true)}><SlidersHorizontal size={16} /> Create incident</button><button className="primary-button" onClick={reportSighting}><MessageSquareWarning size={16} /> Report sighting</button></div></div>
 
         <div className="kpi-grid">
           <div className="kpi-card accent-red"><div className="kpi-top"><span>SEARCH PRIORITY</span><IconBadge tone="red"><Flame size={16} /></IconBadge></div><div className="kpi-value">HIGH <ArrowUpRight size={20} /></div><div className="kpi-foot"><span className="trend-up">+14%</span> since last update</div></div>
