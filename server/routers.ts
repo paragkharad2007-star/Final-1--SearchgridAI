@@ -5,7 +5,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { emitIncidentEvent } from "./incidentEvents";
-import { createIncident, ensureIncident, getDb, getIncidentByCode, insertSighting, listAuditLogs, listSightings, listUsers, resolveIncident, updateUserRole, writeAuditLog } from "./db";
+import { createIncident, ensureIncident, getDb, getIncidentByCode, getVolunteerProfile, getVolunteerProfileById, insertSighting, listAuditLogs, listSightings, listUsers, listVolunteerProfiles, resolveIncident, reviewVolunteerProfile, updateUserRole, upsertVolunteerProfile, writeAuditLog } from "./db";
 import { incidents } from "../drizzle/schema";
 import { dispatchUrgentEscalation, createIncidentBackup } from "./opsServices";
 import { createCoordinationPlan, syncOfflineActions } from "./coordinationService";
@@ -47,9 +47,19 @@ export const appRouter = router({
     users: coordinatorOnly.query(async () => { const rows = await listUsers(); return rows.length ? rows : demoUsers; }),
     setRole: coordinatorOnly.input(z.object({ id: z.number().int(), role: z.enum(["admin", "user"]) })).mutation(async ({ ctx, input }) => { const updated = await updateUserRole(input.id, input.role); demoUsers = demoUsers.map((user) => user.id === input.id ? { ...user, role: input.role } : user); addDemoAudit("SYSTEM", ctx.user.name ?? ctx.user.openId, "ROLE_UPDATED", `User ${input.id} set to ${input.role}`); void writeAuditLog({ incidentCode: "SYSTEM", actor: ctx.user.name ?? ctx.user.openId, action: "ROLE_UPDATED", detail: `User ${input.id} set to ${input.role}` }); return updated ?? demoUsers.find((user) => user.id === input.id) ?? { id: input.id, role: input.role }; }),
     backupStatus: coordinatorOnly.query(() => lastBackup),
+    volunteerProfiles: coordinatorOnly.query(() => listVolunteerProfiles()),
+    reviewVolunteer: coordinatorOnly.input(z.object({ id: z.number().int(), status: z.enum(["approved", "rejected"]), assignedZone: z.string().trim().min(1).max(80).nullable() })).mutation(async ({ ctx, input }) => { const profile = await getVolunteerProfileById(input.id); if (!profile) throw new TRPCError({ code: "NOT_FOUND", message: "Volunteer profile not found" }); if (input.status === "approved" && (profile.availability !== "available" || !input.assignedZone)) throw new TRPCError({ code: "BAD_REQUEST", message: profile.availability !== "available" ? "Volunteer must be marked available before approval" : "Assign a zone before approving this volunteer" }); const updated = await reviewVolunteerProfile(input.id, ctx.user.id, input.status, input.status === "approved" ? input.assignedZone : null); addDemoAudit("SYSTEM", ctx.user.name ?? ctx.user.openId, input.status === "approved" ? "VOLUNTEER_APPROVED" : "VOLUNTEER_REJECTED", `${profile.fullName} · ${input.assignedZone ?? "No zone assigned"}`); return updated ?? { ...profile, ...input, reviewedBy: ctx.user.id, reviewedAt: new Date() }; }),
     backupNow: coordinatorOnly.input(z.object({ code: z.string().min(3) })).mutation(async ({ input }) => { const uploaded = await createIncidentBackup(input.code); lastBackup = { code: input.code, url: uploaded.url, createdAt: new Date() }; return lastBackup; }),
   }),
-  volunteer: router({ updateLocation: protectedProcedure.input(z.object({ lat: z.number(), lng: z.number(), accuracy: z.number().min(0).max(10000) })).mutation(({ ctx, input }) => { const volunteerId = ctx.user.openId; const location = { ...input, at: Date.now() }; liveLocations.set(volunteerId, location); emitIncidentEvent({ type: "volunteer_location_updated", incidentCode: "CX1008", payload: { volunteerId, ...location } }); return location; }) }),
+  volunteer: router({
+    profile: protectedProcedure.query(({ ctx }) => getVolunteerProfile(ctx.user.id)),
+    saveProfile: protectedProcedure.input(z.object({ fullName: z.string().trim().min(2).max(160), phone: z.string().trim().min(7).max(40), emergencyContact: z.string().trim().min(2).max(160), skills: z.string().trim().min(2).max(2000), availability: z.enum(["available", "unavailable"]) })).mutation(async ({ ctx, input }) => {
+      const profile = await upsertVolunteerProfile({ userId: ctx.user.id, ...input, status: "pending", assignedZone: null, reviewedBy: null, reviewedAt: null });
+      addDemoAudit("SYSTEM", ctx.user.name ?? ctx.user.openId, "VOLUNTEER_PROFILE_SUBMITTED", `${input.fullName} submitted a volunteer profile`);
+      return profile ?? { id: Date.now(), ...input, userId: ctx.user.id, status: "pending" as const, assignedZone: null, reviewedBy: null, reviewedAt: null, createdAt: new Date(), updatedAt: new Date() };
+    }),
+    updateLocation: protectedProcedure.input(z.object({ lat: z.number(), lng: z.number(), accuracy: z.number().min(0).max(10000) })).mutation(({ ctx, input }) => { const volunteerId = ctx.user.openId; const location = { ...input, at: Date.now() }; liveLocations.set(volunteerId, location); emitIncidentEvent({ type: "volunteer_location_updated", incidentCode: "CX1008", payload: { volunteerId, ...location } }); return location; }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

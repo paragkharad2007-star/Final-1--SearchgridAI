@@ -12,6 +12,22 @@ export const users = mysqlTable("users", {
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
+export const volunteerProfiles = mysqlTable("volunteerProfiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  fullName: varchar("fullName", { length: 160 }).notNull(),
+  phone: varchar("phone", { length: 40 }).notNull(),
+  emergencyContact: varchar("emergencyContact", { length: 160 }).notNull(),
+  skills: text("skills").notNull(),
+  availability: mysqlEnum("availability", ["available", "unavailable"]).default("available").notNull(),
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  assignedZone: varchar("assignedZone", { length: 80 }),
+  reviewedBy: int("reviewedBy"),
+  reviewedAt: timestamp("reviewedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export const incidents = mysqlTable("incidents", {
   id: int("id").autoincrement().primaryKey(),
   code: varchar("code", { length: 32 }).notNull().unique(),
@@ -46,6 +62,8 @@ export const auditLogs = mysqlTable("auditLogs", {
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+export type VolunteerProfile = typeof volunteerProfiles.$inferSelect;
+export type InsertVolunteerProfile = typeof volunteerProfiles.$inferInsert;
 export type Incident = typeof incidents.$inferSelect;
 export type Sighting = typeof sightings.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;

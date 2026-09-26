@@ -1,6 +1,6 @@
 import { eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { auditLogs, InsertUser, incidents, sightings, users } from "../drizzle/schema";
+import { auditLogs, InsertUser, incidents, InsertVolunteerProfile, sightings, users, volunteerProfiles } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -48,6 +48,43 @@ export async function updateUserRole(id: number, role: "admin" | "user") {
   if (!db) return undefined;
   await db.update(users).set({ role }).where(eq(users.id, id));
   const rows = await db.select({ id: users.id, openId: users.openId, name: users.name, email: users.email, role: users.role, lastSignedIn: users.lastSignedIn }).from(users).where(eq(users.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function getVolunteerProfile(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(volunteerProfiles).where(eq(volunteerProfiles.userId, userId)).limit(1);
+  return rows[0];
+}
+
+export async function upsertVolunteerProfile(input: InsertVolunteerProfile) {
+  const db = await getDb();
+  if (!db) return undefined;
+  await db.insert(volunteerProfiles).values(input).onDuplicateKeyUpdate({
+    set: { fullName: input.fullName, phone: input.phone, emergencyContact: input.emergencyContact, skills: input.skills, availability: input.availability, status: "pending", assignedZone: null, reviewedBy: null, reviewedAt: null },
+  });
+  return getVolunteerProfile(input.userId);
+}
+
+export async function listVolunteerProfiles() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({ profile: volunteerProfiles, userName: users.name, userEmail: users.email, openId: users.openId }).from(volunteerProfiles).leftJoin(users, eq(volunteerProfiles.userId, users.id)).orderBy(desc(volunteerProfiles.updatedAt)).limit(200);
+}
+
+export async function getVolunteerProfileById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(volunteerProfiles).where(eq(volunteerProfiles.id, id)).limit(1);
+  return rows[0];
+}
+
+export async function reviewVolunteerProfile(id: number, reviewerId: number, status: "approved" | "rejected", assignedZone: string | null) {
+  const db = await getDb();
+  if (!db) return undefined;
+  await db.update(volunteerProfiles).set({ status, assignedZone, reviewedBy: reviewerId, reviewedAt: new Date() }).where(eq(volunteerProfiles.id, id));
+  const rows = await db.select().from(volunteerProfiles).where(eq(volunteerProfiles.id, id)).limit(1);
   return rows[0];
 }
 

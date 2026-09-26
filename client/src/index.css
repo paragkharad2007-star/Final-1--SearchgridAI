@@ -198,3 +198,41 @@ h2 { color: #eff8f4; font-size: 16px; letter-spacing: -.025em; }
 .admin-access-gate p { max-width: 520px; margin: 0; color: #9bb5ac; font-size: 12px; line-height: 1.6; }
 .admin-access-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
 @media (max-width: 520px) { .admin-access-actions { flex-direction: column; width: 100%; } .admin-access-actions > * { width: min(300px, 100%); } }
+.role-disabled, button:disabled { cursor: not-allowed; opacity: .48; }
+.volunteer-profile-button { min-height: 32px; padding: 0 10px; font-size: 10px; }
+.volunteer-profile-modal { max-height: min(720px, calc(100vh - 40px)); overflow-y: auto; }
+.profile-intro { margin: 10px 0 18px; color: #9bb5ac; font-size: 10px; line-height: 1.5; }
+.profile-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.profile-form-grid label { display: grid; gap: 6px; }
+.profile-form-grid label span { color: #7f9c92; font: 500 8px 'DM Mono', monospace; letter-spacing: .06em; }
+.profile-form-grid input, .profile-form-grid select, .profile-form-grid textarea { width: 100%; padding: 10px; color: #e4f4ee; border: 1px solid rgba(160,202,190,.18); border-radius: 8px; outline: none; background: rgba(255,255,255,.035); font: 500 11px 'Manrope', sans-serif; resize: vertical; }
+.profile-form-grid input, .profile-form-grid select { min-height: 38px; padding-top: 0; padding-bottom: 0; }
+.profile-form-grid input::placeholder, .profile-form-grid textarea::placeholder { color: #55736b; }
+.profile-form-grid input:focus, .profile-form-grid select:focus, .profile-form-grid textarea:focus { border-color: var(--mint); box-shadow: 0 0 0 3px rgba(159,247,210,.08); }
+.profile-wide { grid-column: 1 / -1; }
+.profile-status-note { display: grid; gap: 4px; margin: 14px 0; padding: 10px; color: #b7d1c7; border: 1px solid rgba(159,247,210,.16); border-radius: 8px; background: rgba(159,247,210,.04); font-size: 10px; }
+.profile-status-note strong { color: var(--mint); text-transform: capitalize; }
+.volunteer-review-card { margin-top: 14px; }
+.volunteer-empty { display: grid; justify-items: center; gap: 8px; padding: 32px 20px; color: #749087; text-align: center; }
+.volunteer-empty svg { color: #9ff7d2; }
+.volunteer-empty strong { color: #cde4da; font-size: 12px; }
+.volunteer-empty span { max-width: 440px; font-size: 10px; }
+.volunteer-review-list { display: grid; gap: 10px; }
+.volunteer-review-row { display: grid; grid-template-columns: minmax(220px, 1.2fr) minmax(180px, 1fr) minmax(250px, 1.1fr); gap: 16px; align-items: center; padding: 14px 0; border-top: 1px solid rgba(160,202,190,.1); }
+.volunteer-review-identity { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.volunteer-review-identity > div:last-child { display: grid; gap: 3px; min-width: 0; }
+.volunteer-review-identity strong { color: #e3f2ec; font-size: 12px; }
+.volunteer-review-identity span, .volunteer-review-identity small { overflow: hidden; color: #88a59b; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.volunteer-review-meta { display: grid; grid-template-columns: auto auto; gap: 6px; align-items: center; }
+.volunteer-review-meta p { grid-column: 1 / -1; margin: 3px 0 0; color: #a6beb5; font-size: 10px; line-height: 1.45; }
+.availability-pill, .admin-status.pending, .admin-status.approved, .admin-status.rejected { display: inline-flex; width: fit-content; align-items: center; padding: 4px 7px; border-radius: 999px; font: 600 8px 'DM Mono', monospace; text-transform: uppercase; }
+.availability-pill.available { color: #9ff7d2; background: rgba(159,247,210,.1); }
+.availability-pill.unavailable { color: #ffb8ae; background: rgba(255,122,110,.1); }
+.admin-status.pending { color: #ffd779; background: rgba(255,215,121,.1); }
+.admin-status.approved { color: #9ff7d2; background: rgba(159,247,210,.1); }
+.admin-status.rejected { color: #ffb8ae; background: rgba(255,122,110,.1); }
+.volunteer-review-actions { display: flex; align-items: flex-end; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.volunteer-review-actions label { display: grid; gap: 5px; color: #7f9c92; font: 500 8px 'DM Mono', monospace; text-transform: uppercase; }
+.volunteer-review-actions select { min-width: 145px; min-height: 31px; padding: 0 8px; color: #d7eee5; border: 1px solid rgba(160,202,190,.18); border-radius: 7px; background: #122a28; font: 500 10px 'Manrope', sans-serif; }
+@media (max-width: 980px) { .volunteer-review-row { grid-template-columns: 1fr 1fr; } .volunteer-review-actions { grid-column: 1 / -1; justify-content: flex-start; } }
+@media (max-width: 620px) { .profile-form-grid { grid-template-columns: 1fr; } .profile-wide { grid-column: auto; } .volunteer-review-row { grid-template-columns: 1fr; gap: 10px; } .volunteer-review-actions { display: grid; grid-template-columns: 1fr 1fr; } .volunteer-review-actions label { grid-column: 1 / -1; } .volunteer-review-actions select { width: 100%; } .volunteer-profile-button { display: inline-flex; } }
