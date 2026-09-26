@@ -1,0 +1,3 @@
+# Mock Crowd-Flow Verification
+
+The command center and volunteer desktop views render successfully after the mock telemetry update. The existing live venue map and mobile-ready volunteer mission UI remain intact. The new planner exposes baseline, crowd-surge, and evacuation scenarios and feeds those scenario values into drift-zone probability and dispatch planning. Automated validation passed with 6 test files and 18 tests, plus TypeScript and production build checks. One redundant mobile screenshot request returned an argument parser error; earlier mobile verification had already passed before this mock-feed update.
